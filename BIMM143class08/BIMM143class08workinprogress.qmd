@@ -1,0 +1,348 @@
+---
+title: "BIMM143class08"
+format: pdf
+---
+##Outline
+Today we will apply the machine learning methods we introduced in the last class on breast cancer biopsy data from the fine needle aspiration (FNA)
+
+##Data input
+The data is supplied on CSV format: 
+```{r}
+# Save your input data file into your Project directory
+fna.data <- "WisconsinCancer.csv"
+
+# input the data and store as wisc.df
+wisc.df <- read.csv(fna.data, row.names=1)
+head(wisc.df)
+
+```
+
+```{r}
+
+##Now I will store the diagnosis column for later 
+##and exclude it from the data set I will actually 
+##do things with that I will call `wisc.data()` 
+##-1 to remove first column
+wisc.data<-wisc.df[,-1]
+diagnosis<-as.factor(wisc.df$diagnosis)
+
+```
+>Q1 How many people are in this data set?
+
+```{r}
+nrow(wisc.df)
+
+```
+>Q2. How many of the observations have a malignant diagnosis?
+
+```{r}
+
+##use table to figure out which type the patients fall under benign B or malignant M
+table(wisc.df$diagnosis)
+
+##you can also do sum of the thing that equal to M 
+##which is inside the parentheses. 
+##Inside parentheses are true false. Remeber T=1, F=0
+sum(wisc.df$diagnosis=="M")
+
+##So 212
+
+```
+>Q3. How many variables/features in the data are suffixed with _mean?
+
+```{r}
+
+##use grep function to find the column that 
+##have character and then length to find the total
+
+x<-colnames(wisc.data)
+length(grep("_mean", x))
+
+```
+
+
+```{r}
+##Principal Component Analysis
+
+##We need to scale our input data before PCA 
+##as some of the columns ar emeasured in terms of 
+##very different units with different means and different variants. 
+##THe upshot is we set `scale=TRUE` 
+
+colMeans(wisc.data)
+
+apply(wisc.data,2,sd)
+
+wisc.pr <- prcomp( wisc.data, scale=TRUE )
+
+##summary to get the percent variance and every important info we want
+
+summary(wisc.pr)
+```
+
+```{r}
+
+##
+plot(wisc.pr$x[,1], wisc.pr$x[,2], col=diagnosis, pch=16)
+```
+>Q4. From your results, what proportion of the original variance is captured by the first principal components (PC1)? 
+
+around 44.27%
+
+
+>Q5. How many principal components (PCs) are required to describe at least 70% of the original variance in the data? 
+
+Three
+
+##proportion of variance tells you how much each PC represents. Cumulative proportion adds them all up
+
+>Q6. How many principal components (PCs) are required to describe at least 90% of the original variance in the data?
+
+Seven
+```{r}
+biplot(wisc.pr)
+```
+>Q7 What stands out to you about this plot? Is it easy or difficult to understand? Why?
+
+It is very dense and confusing. Cannot identify each and every element, difficult to understand. 
+
+```{r}
+head(wisc.pr$x)
+
+```
+
+
+```{r}
+
+### Scatter plot observations by PC 1 and 2 help us see better
+
+##you can either do column 1, column two like 
+##before or just set the column and then the 
+##PC1 and PC2 becomes x and y lab respectively 
+##so note it later if that makes sense. But as 
+##can be seen later this only works for default PC1/PC2
+plot(wisc.pr$x, col=diagnosis, xlab="PC1",ylab="PC2" )
+
+```
+
+```{r}
+
+##Q8. Generate a similar plot for 
+##principal components 1 and 3. 
+##What do you notice about these plots?
+
+## Repeat for components 1 and 3
+##you can do c(,) inside the square brackets 
+##to choose two columns or two PCA that is not 
+##the first two and is sequential 
+##(so not 1,2 but things like 1,3, 2,3, 2,10 etc)
+plot(wisc.pr$x[,c(1,3)], col = diagnosis, 
+     xlab = "PC1", ylab = "PC3")
+
+plot(wisc.pr$x[,1], wisc.pr$x[,3], xlab="PC1", ylab="PC3", col=diagnosis, pch=16)
+
+##i guess you can either do 
+##wisc.pr$x[,c(1,3)]
+ ##wisc.pr$x[,1], wisc.pr$x[,3]
+
+```
+
+
+
+
+```{r}
+## Repeat for components 1 and 3
+##plot(wisc.pr$x[,], col = diagnosis, 
+##xlab = "PC1", ylab = "PC3")
+##this is wrong. You need to tell it that it
+##is column 1 or 3 otherwise they will default to column 1 and 2
+##also the [] part does not seem to matter as much i guess
+
+##Anyhow to answer question 8, it seems that compared to 
+##PC1 vs PC2, the black concentration part location
+##is now ##slighly lower compared to before?
+##Also because PC2 contributed to more variance,
+##the separation is more clear than when compared
+##to PC3??
+```
+```{r}
+# Create a data.frame for ggplot because that is the input
+df <- as.data.frame(wisc.pr$x)
+df$diagnosis <- diagnosis
+
+# Load the ggplot2 package
+library(ggplot2)
+
+# Make a scatter plot colored by diagnosis
+ggplot(df) + 
+  aes(PC1, PC2, col=diagnosis) + 
+  geom_point()
+```
+
+
+```{r}
+##calculating variance
+
+pr.var<-wisc.pr$sdev^2
+
+head(pr.var)
+
+```
+```{r}
+## Variance explained by each principal component: pve
+pve<-pr.var/sum(pr.var)
+
+##Plot variance explained for each principal component
+
+plot(pve, xlab = "Principal Component", 
+     ylab = "Proportion of Variance Explained", 
+     ylim = c(0, 1), type = "o")
+```
+```{r}
+# Alternative scree plot of the same data, please take a look at the y-axis
+barplot(pve, ylab = "Precent of Variance Explained",
+     names.arg=paste0("PC",1:length(pve)), las=2, axes = FALSE)
+axis(2, at=pve, labels=round(pve,2)*100 )
+
+library(factoextra)
+fviz_eig(wisc.pr, addlabels = TRUE)
+```
+
+>Q9. For the first principal component, what is the component of the loading vector (i.e. wisc.pr$rotation[,1]) for the feature concave.points_mean?
+
+ -0.26085376
+```{r}
+
+##it is one of the columns of wisc.df
+wisc.pr$rotation[,1]
+```
+
+
+
+>Q10. What is the minimum number of principal components required to explain 80% of the variance of the data?
+
+5
+
+At least to section #5 question 15
+
+```{r}
+data.scaled<-scale(wisc.data)
+```
+
+```{r}
+data.dist <- dist(data.scaled)
+head(data.dist)
+```
+```{r}
+wisc.hclust <- hclust(data.dist, method="complete")
+wisc.hclust
+
+```
+
+```{r}
+
+## Q.11 Using the plot() and abline() functions, 
+##what is the height at which the clustering model 
+##has 4 clusters?
+plot(wisc.hclust)
+abline(h=4, col="red", lty=2)
+
+
+##Answer is around 20??
+```
+
+```{r}
+##here it also shows that you can choose two columns 
+##with [1:3]
+
+wisc.hclust.clusters <- cutree(wisc.hclust, k=4)
+##to compare just (,)
+table(wisc.hclust.clusters, diagnosis)
+
+wisc.hclust.clusters2 <- cutree(wisc.hclust, k=2)
+table(wisc.hclust.clusters2, diagnosis)
+
+wisc.hclust.clusters3 <- cutree(wisc.hclust, k=10)
+table(wisc.hclust.clusters3, diagnosis)
+
+##Q12. Can you find a better cluster vs diagnoses 
+##match by cutting into a different number of clusters between 2 and 10?
+##Yes it seems the k value increases the more certain 
+##the difference or gap in value between the two BM i
+##ncreases
+
+
+plot(wisc.hclust)
+abline(h = 4, col = "red", lty = 2, method = "ward.D2")
+
+plot(wisc.hclust)
+abline(h = 4, col = "red", lty = 2, method = "single")
+
+plot(wisc.hclust)
+abline(h = 4, col = "red", lty = 2, method = "complete")
+
+plot(wisc.hclust)
+abline(h = 4, col = "red", lty = 2, method = "average")
+
+
+##they all look the same to me
+
+```
+
+
+```{r}
+x<-scale(wisc.data)
+wisc.km<-kmeans(x,centers=2,nstart=20)
+
+table(wisc.km$cluster, diagnosis)
+
+##Q14. How well does k-means separate the two diagnoses? 
+##How does it compare to your hclust results?
+
+table(wisc.km$cluster, wisc.hclust.clusters)
+
+##well it seems both get the job done well
+##at least in this case not a whole difference
+
+```
+
+
+
+```{r}
+
+d<-dist(wisc.pr$x[,1:7])
+wisc.pr.hclust<-hclust(d, method="ward.D2")
+plot(wisc.pr.hclust)
+
+
+##wisc.hclust.clusters <- c
+
+```
+
+
+
+Generate 2 cluster groups from this hclust object
+
+```{r}
+grps<-cutree(wisc.pr.hclust, k=2)
+table(grps)
+table(grps, diagnosis)
+##these two gets you the same graph
+plot(wisc.pr$x[,1], wisc.pr$x[,2], col=grps)
+plot(wisc.pr$x[,1:2], col=grps)
+
+plot(wisc.pr$x[,1:2], col=diagnosis)
+##swap colors by making it as factor
+g <- as.factor(grps)
+levels(g)
+g <- relevel(g,2)
+levels(g)
+##Plot using our re-ordered factor 
+plot(wisc.pr$x[,1:2], col=g)
+##Q.15
+wisc.pr.hclust.clusters <- cutree(wisc.pr.hclust, k=2)
+
+table(wisc.pr.hclust.clusters, diagnosis)
+```
+
+
