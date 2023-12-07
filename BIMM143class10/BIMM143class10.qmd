@@ -1,0 +1,134 @@
+---
+title: "BIMM143class10"
+format: pdf
+---
+
+# The PDB Database
+
+First let's see what is in the PDB database-
+the main repository of protein structures
+
+Downloaded composition stats from: 
+
+https://tinyurl.com/statspdb
+
+
+```{r}
+##remmeber you gotta put the downloaded file 
+##in the same location as the R
+stats<-read.csv("PDBStats.csv", row.names=1)
+stats
+
+##There is a problem here due to the commas n #
+##This causes R to treat them as characters
+
+x<-stats$X.ray
+##gsub to replace
+##first is the comma then none to replace 
+##and of course x
+gsub(",", "", x)
+##as.numeric to change to numeric #
+as.numeric(gsub(",", "", x))
+```
+```{r}
+rm.comma<-function(x){
+  as.numeric(gsub(",", "", x))
+}
+
+rm.comma(stats$EM)
+
+##I can use 'apply()' to fix the whole table
+##2 for apply to column, second
+##rm.comma for function as argument third
+##stats for the x or array matrix first
+pdbstats<-apply(stats, 2, rm.comma)
+rownames(pdbstats)<-rownames(stats)
+head(pdbstats)
+##now we want to find the total
+## so we do sum
+totals<-apply(pdbstats, 2, sum)
+##since totals alone just give you numbers
+##you need to make it into percentage
+##use round to do so
+##totals/totals alone would be wrong
+##totals/totals["Total] shows
+##you are interacting with the total number
+##of occurance so they give you the right
+##% value. 2 is the decimal place
+round(totals/totals["Total"]*100, 2)
+```
+>Q1: What percentage of structures in the PDB are 
+solved by X-Ray and Electron Microscopy. 
+
+84.83 and 8.33 respectively
+
+>Q2: What proportion of structures in the PDB are protein? 
+
+```{r}
+round(pdbstats[,"Total"]/sum(pdbstats[,"Total"])*100,2)
+
+##Q.3 skipped
+```
+```{r}
+library(readr)
+read_csv("PDBstats.csv")
+```
+
+```{r}
+##Fraction of Uniprot
+
+##Protein structures in PDB as a fraction of 
+##Uniprot sequences
+
+round((pdbstats[1,"Total"]/251600768)*100,2)
+
+
+```
+
+Here is a lovely figure of HIP-Pr with 
+the catalytic ASP residues, the MK1 compounds 
+and the all important water 308. QUestion 6
+
+![](1HSG.png)
+
+
+Q4: Water molecules normally have 3 atoms. 
+Why do we see just one atom per water molecule 
+in this structure?
+
+Too small resolution of 2 armstrong is 
+bigger than the hydrogen of water. 
+You need 1 armstrom or better to see such small atoms. 
+
+Q5 There is a critical “conserved” water molecule 
+in the binding site. 
+Can you identify this water molecule? 
+What residue number does this water molecule have?
+
+Water HOH 308
+
+##The bio3d package for structural bioinformatics
+
+```{r}
+library(bio3d)
+pdb<-read.pdb("1HSG")
+attributes(pdb)
+
+head(pdb$atom)
+pdb
+
+```
+##Predicting functional motions of a single structure
+
+Let's finish today with a bioinformatics calculation to predict the functional motion of a PDB structure. 
+
+```{r}
+adk <- read.pdb("6s36")
+
+adk
+m <- nma(adk)
+plot(m)
+mktrj(m, file="adk_m7.pdb")
+
+```
+

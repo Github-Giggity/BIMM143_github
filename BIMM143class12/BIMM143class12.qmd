@@ -1,0 +1,46 @@
+---
+title: "BIMM143class12"
+format: pdf
+---
+
+# Section 1 Proportion of G/G in a population
+
+#Downloaded a CSV file from Ensemble<https://www.ensembl.org/Homo_sapiens/Variation/Sample?db=core;r=17:39894595-39895595;v=rs8067378;vdb=variation;vf=105535077;sample=MXL#373531_tablePanel>
+
+Here we read this CSV file
+
+```{r}
+mxl<-read.csv("class12.csv")
+head(mxl)
+```
+
+```{r}
+table(mxl$Genotype..forward.strand.)
+table(mxl$Genotype..forward.strand.)/nrow(mxl)*100
+
+```
+##Section 4 Population Scale Analysis
+
+##How many samples do we have?
+
+```{r}
+expr<-read.table("BIMM143class12optional.txt")
+head(expr)
+
+nrow(expr)
+
+table(expr$geno)
+```
+
+```{r}
+library(ggplot2)
+##Lets make a boxplot
+##you do not even need x=, y=
+ggplot(expr) +
+  aes(geno, exp, fill=geno) +
+  geom_boxplot(notch=TRUE)
+
+##notch adds "belt" in the midle
+  
+```
+
